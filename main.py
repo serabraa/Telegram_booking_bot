@@ -5,6 +5,8 @@
 """
 Beauty Salon Booking Bot with date + paginated timeslot picker and admin approval.
 """
+import os
+from dotenv import load_dotenv
 import logging
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -44,11 +46,14 @@ WOMEN, MEN, \
 W_HAIRCUT, W_COLORING, \
 M_HAIRCUT, M_SHAVE = range(6)
 
-ADMIN_CHAT_ID = -4717273516  # your admin/group chat
 
 # Booking storage
 BOOKINGS = OrderedDict()
 NEXT_BOOKING_ID = 1
+
+load_dotenv()
+TOKEN = os.environ["BOT_TOKEN"]
+ADMIN_CHAT_ID = int(os.environ["ADMIN_CHAT_ID"])
 
 SERVICE_MAP = {
     W_HAIRCUT: "Женская Стрижка",
@@ -408,7 +413,7 @@ async def handle_reject_reason(update: Update, context: ContextTypes.DEFAULT_TYP
 
 def main() -> None:
     """Run the bot."""
-    application = Application.builder().token("7583080664:AAFdP9aIgFPf5Di4n9CIVvicXGpfG376ryU").build()
+    application = Application.builder().token(TOKEN).build()
 
     # Main user booking flow
     conv_handler = ConversationHandler(
