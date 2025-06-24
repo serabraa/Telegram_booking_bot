@@ -7,6 +7,7 @@ Beauty Salon Booking Bot with date + paginated timeslot picker and admin approva
 """
 import logging
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from collections import OrderedDict
 
 from telegram import (
@@ -61,6 +62,7 @@ MONTH_NAMES = {
     5: "Май",      6: "Июнь",   7: "Июль",     8: "Август",
     9: "Сентябрь", 10: "Октябрь",11: "Ноябрь",  12: "Декабрь",
 }
+LOCAL_TZ = ZoneInfo("Asia/Yerevan")
 
 def format_slot(iso_slot: str) -> str:
     """
@@ -179,7 +181,7 @@ async def show_slot_page(query, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Helper to render a page of 9 timeslots with Next/Back."""
     date_str = context.user_data['date']
     page = context.user_data['slot_page']
-    now      = datetime.now()                       # current local time
+    now      = datetime.now(LOCAL_TZ)                       # current local time
 
     # Parse it into a date for formatting
     d = datetime.fromisoformat(date_str).date()
