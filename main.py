@@ -216,8 +216,8 @@ async def slot_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     )
     keyboard = [
         [
-            InlineKeyboardButton("✅ Accept", callback_data=f"accept_{booking_id}"),
-            InlineKeyboardButton("❌ Reject", callback_data=f"reject_{booking_id}"),
+            InlineKeyboardButton("✅ Принять", callback_data=f"accept_{booking_id}"),
+            InlineKeyboardButton("❌ Отклонить", callback_data=f"reject_{booking_id}"),
         ]
     ]
 
@@ -283,7 +283,7 @@ async def admin_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(
         text=(
             f"❌ *Booking pending rejection*\n\n{footer}\n\n"
-            "Пожалуйста напишите *причину отклонения* (or send `/skip` to reject without comment):"
+            "Пожалуйста напишите *причину отклонения* (или отправьте `/skip` для отклонения без комментариев):"
         ),
         parse_mode="Markdown"
     )
@@ -297,7 +297,7 @@ async def handle_reject_reason(update: Update, context: ContextTypes.DEFAULT_TYP
     booking = BOOKINGS.pop(booking_id, None)
 
     if not booking:
-        await update.message.reply_text("⚠️ That booking is no longer available.")
+        await update.message.reply_text("⚠️ Этот запрос больше не доступен.")
         return ConversationHandler.END
 
     # Build footer again
@@ -316,14 +316,14 @@ async def handle_reject_reason(update: Update, context: ContextTypes.DEFAULT_TYP
     await context.bot.send_message(
         chat_id=booking["user_chat_id"],
         text=(
-            f"❌ Your booking has been *rejected*. {reason}\n\n{footer}"
+            f"❌ Ваш запрос был *отлконён*. {reason}\n\n{footer}"
         ),
         parse_mode="Markdown",
     )
 
     # 2) Send confirmation back to the admin (as a new message)
     await update.message.reply_text(
-        text=f"❌ *Booking rejected.*{reason}\n\n{footer}",
+        text=f"❌ *Запрос Отлконён.*{reason}\n\n{footer}",
         parse_mode="Markdown",
     )
 
