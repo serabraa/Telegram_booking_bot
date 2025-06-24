@@ -55,6 +55,23 @@ SERVICE_MAP = {
     M_HAIRCUT: "Мужская Стрижка",
     M_SHAVE:   "Мужские Барберские Услуги и Борода",
 }
+# Russian month names in nominative
+MONTH_NAMES = {
+    1: "Январь",   2: "Февраль", 3: "Март",     4: "Апрель",
+    5: "Май",      6: "Июнь",   7: "Июль",     8: "Август",
+    9: "Сентябрь", 10: "Октябрь",11: "Ноябрь",  12: "Декабрь",
+}
+
+def format_slot(iso_slot: str) -> str:
+    """
+    Convert "2025-06-26 12:00" → "Июнь 26 12:00"
+    """
+    # Parse the ISO datetime string
+    dt = datetime.fromisoformat(iso_slot)
+    # Month name + day
+    month_day = f"{MONTH_NAMES[dt.month]} {dt.day}"
+    # Hours:minutes zero-padded
+    return f"{month_day} {dt.hour:02d}:{dt.minute:02d}"
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -135,7 +152,9 @@ async def service_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     keyboard = []
     for offset in range(3):
         d = today + timedelta(days=offset)
-        keyboard.append([InlineKeyboardButton(d.isoformat(), callback_data=f"date_{d}")])
+        display = f"{MONTH_NAMES[d.month]} {d.day}"
+        payload = d.isoformat()
+        keyboard.append([InlineKeyboardButton(d.isoformat(), callback_data=f"date_{payload}")])
 
     await query.edit_message_text(
         "Пожалуйста выберите дату:",
@@ -161,19 +180,27 @@ async def show_slot_page(query, context: ContextTypes.DEFAULT_TYPE) -> int:
     date_str = context.user_data['date']
     page = context.user_data['slot_page']
 
+    # Parse it into a date for formatting
+    d = datetime.fromisoformat(date_str).date()
+    month_day = f"{MONTH_NAMES[d.month]} {d.day}"
+
     # generate all slots for that date at .0 and .5
     slots = []
     for hour in range(9, 24):
-        slots.append(f"{date_str} {hour:02d}:00")
-        slots.append(f"{date_str} {hour:02d}:30")
+        slots.append(f"{hour:02d}:00")
+        slots.append(f"{hour:02d}:30")
 
     per_page = 9
     start = page * per_page
     chunk = slots[start:start + per_page]
 
     keyboard = []
-    for slot in chunk:
-        keyboard.append([InlineKeyboardButton(slot, callback_data=f"slot_{slot}")])
+    for time_str in chunk:
+        # display: "June 25 09:00"
+        display = f"{month_day} {time_str}"
+        # callback_data: keep ISO date + time so you can store it exactly
+        payload = f"{date_str} {time_str}"
+        keyboard.append([InlineKeyboardButton(display, callback_data=f"slot_{payload}")])
 
     # pagination buttons
     nav = []
@@ -185,7 +212,7 @@ async def show_slot_page(query, context: ContextTypes.DEFAULT_TYPE) -> int:
         keyboard.append(nav)
 
     await query.edit_message_text(
-        "Select a timeslot:",
+        "Выберите время:",
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
     return SELECT_SLOT
@@ -225,6 +252,7 @@ async def slot_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         "timeslot":     slot,
     }
 
+    friendly = format_slot(slot)
     # build admin message
     admin_text = (
         f"🆕 *New Booking Request*\n"
@@ -232,7 +260,7 @@ async def slot_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         f"*Name:* {user.full_name}\n"
         f"*Username:* @{user.username or '—'}\n"
         f"*Service:* {service}\n"
-        f"*Timeslot:* {slot}"
+        f"*Timeslot:* {friendly}"
     )
     keyboard = [
         [
@@ -272,13 +300,14 @@ async def admin_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not booking:
         return await query.edit_message_text("⚠️ Запрос не найден или закрыт.")
 
+    slot_display = format_slot(booking["timeslot"])
     # Prepare the common footer of booking details
     footer = (
         f"*Booking ID:* `{booking_id}`\n"
         f"*Name:* {booking['user_name']}\n"
         f"*Username:* @{booking['username']}\n"
         f"*Service:* {booking['service']}\n"
-        f"*Timeslot:* {booking['timeslot']}"
+        f"*Timeslot:* {slot_display}"
     )
 
     if action == "accept":
