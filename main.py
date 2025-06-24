@@ -408,7 +408,7 @@ async def handle_reject_reason(update: Update, context: ContextTypes.DEFAULT_TYP
 
 def main() -> None:
     """Run the bot."""
-    application = Application.builder().token("7691450558:AAFPkXofOlHOA04S7e0vVc0LP2pmTYX45JI").build()
+    application = Application.builder().token("7583080664:AAFdP9aIgFPf5Di4n9CIVvicXGpfG376ryU").build()
 
     # Main user booking flow
     conv_handler = ConversationHandler(
