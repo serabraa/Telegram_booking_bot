@@ -70,14 +70,34 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     )
     return SELECT_CATEGORY
 
+# method for restart the booking process, after one is finished
+async def restart_booking(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()  # stop the spinner
+
+    # Build the same keyboard as in /start
+    keyboard = [
+        [
+            InlineKeyboardButton("👩 Для Женщин", callback_data=str(WOMEN)),
+            InlineKeyboardButton("👨 Для Мужчин",   callback_data=str(MEN)),
+        ]
+    ]
+    await context.bot.send_message(
+        chat_id=query.message.chat_id,
+        text="Добро Пожаловать в Solo Beauty!\nПожалуйста выберите категорию:",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
+    return SELECT_CATEGORY
+
+
 
 async def women_services(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
     keyboard = [
         [
-            InlineKeyboardButton("💇 Стрижка",  callback_data=str(W_HAIRCUT)),
-            InlineKeyboardButton("🎨 Окрашивание", callback_data=str(W_COLORING)),
+            InlineKeyboardButton("💇 Волосы",  callback_data=str(W_HAIRCUT)),
+            InlineKeyboardButton("🎨 Макияж", callback_data=str(W_COLORING)),
         ]
     ]
     await query.edit_message_text(
@@ -228,7 +248,7 @@ async def slot_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
-    await query.edit_message_text("👌 Ваш запрос рассматривается, вам скоро ответят :)")
+    await query.edit_message_text("👌 Ваш запрос рассматривается, вам скоро ответят ❤️")
     context.user_data.clear()
     return ConversationHandler.END
 
@@ -269,6 +289,13 @@ async def admin_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"✅ Ваш запрос *принят*!\n\n{footer}"
             ),
             parse_mode="Markdown",
+        )
+        await context.bot.send_message(
+            chat_id=booking["user_chat_id"],
+            text="🔄 Хотите сделать ещё один запрос?",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("📅 Новый Запрос", callback_data="restart")
+            ]])
         )
         # 2) Remove booking
         BOOKINGS.pop(booking_id, None)
@@ -316,26 +343,35 @@ async def handle_reject_reason(update: Update, context: ContextTypes.DEFAULT_TYP
     await context.bot.send_message(
         chat_id=booking["user_chat_id"],
         text=(
-            f"❌ Ваш запрос был *отлконён*. {reason}\n\n{footer}"
+            f"❌ Ваш запрос был *отклонён*. {reason}\n\n{footer}"
         ),
         parse_mode="Markdown",
     )
 
     # 2) Send confirmation back to the admin (as a new message)
     await update.message.reply_text(
-        text=f"❌ *Запрос Отлконён.*{reason}\n\n{footer}",
+        text=f"❌ *Запрос Отклонён.*{reason}\n\n{footer}",
         parse_mode="Markdown",
+    )
+    await context.bot.send_message(
+        chat_id=booking["user_chat_id"],
+        text="🔄 Хотите сделать ещё один запрос?",
+        reply_markup=InlineKeyboardMarkup([[
+            InlineKeyboardButton("📅 Новый Запрос", callback_data="restart")
+        ]])
     )
 
     return ConversationHandler.END
 
 def main() -> None:
     """Run the bot."""
-    application = Application.builder().token("7583080664:AAFdP9aIgFPf5Di4n9CIVvicXGpfG376ryU").build()
+    application = Application.builder().token("7691450558:AAFPkXofOlHOA04S7e0vVc0LP2pmTYX45JI").build()
 
     # Main user booking flow
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[
+            CommandHandler("start", start),
+            CallbackQueryHandler(restart_booking, pattern="^restart$")],
         states={
             SELECT_CATEGORY: [
                 CallbackQueryHandler(women_services, pattern=f"^{WOMEN}$"),
