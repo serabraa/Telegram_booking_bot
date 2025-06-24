@@ -154,7 +154,7 @@ async def service_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         d = today + timedelta(days=offset)
         display = f"{MONTH_NAMES[d.month]} {d.day}"
         payload = d.isoformat()
-        keyboard.append([InlineKeyboardButton(d.isoformat(), callback_data=f"date_{payload}")])
+        keyboard.append([InlineKeyboardButton(display, callback_data=f"date_{payload}")])
 
     await query.edit_message_text(
         "Пожалуйста выберите дату:",
@@ -179,6 +179,7 @@ async def show_slot_page(query, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Helper to render a page of 9 timeslots with Next/Back."""
     date_str = context.user_data['date']
     page = context.user_data['slot_page']
+    now      = datetime.now()                       # current local time
 
     # Parse it into a date for formatting
     d = datetime.fromisoformat(date_str).date()
@@ -189,17 +190,28 @@ async def show_slot_page(query, context: ContextTypes.DEFAULT_TYPE) -> int:
     for hour in range(9, 24):
         slots.append(f"{hour:02d}:00")
         slots.append(f"{hour:02d}:30")
+    if d == now.date():
+        # compute “minutes since midnight” for right‐now
+        current_minutes = now.hour * 60 + now.minute
+
+        def slot_to_minutes(t: str) -> int:
+            # t is "HH:MM"
+            h, m = map(int, t.split(":"))
+            return h * 60 + m
+
+        # keep any slot whose minutes ≥ current_minutes
+        slots = [t for t in slots if slot_to_minutes(t) >= current_minutes]
 
     per_page = 9
     start = page * per_page
     chunk = slots[start:start + per_page]
 
     keyboard = []
-    for time_str in chunk:
+    for t in chunk:
         # display: "June 25 09:00"
-        display = f"{month_day} {time_str}"
+        display = f"{month_day} {t}"
         # callback_data: keep ISO date + time so you can store it exactly
-        payload = f"{date_str} {time_str}"
+        payload = f"{date_str} {t}"
         keyboard.append([InlineKeyboardButton(display, callback_data=f"slot_{payload}")])
 
     # pagination buttons
@@ -366,7 +378,7 @@ async def handle_reject_reason(update: Update, context: ContextTypes.DEFAULT_TYP
     )
 
     # Determine reason text
-    reason = "" if text.strip() == "/skip" else f"\n\n_Reason:_ {text}"
+    reason = "" if text.strip() == "/skip" else f"\n\n_Причина:_ {text}"
 
     # 1) Notify the user
     await context.bot.send_message(
@@ -394,7 +406,7 @@ async def handle_reject_reason(update: Update, context: ContextTypes.DEFAULT_TYP
 
 def main() -> None:
     """Run the bot."""
-    application = Application.builder().token("7691450558:AAFPkXofOlHOA04S7e0vVc0LP2pmTYX45JI").build()
+    application = Application.builder().token("7583080664:AAFdP9aIgFPf5Di4n9CIVvicXGpfG376ryU").build()
 
     # Main user booking flow
     conv_handler = ConversationHandler(
