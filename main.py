@@ -6,7 +6,7 @@
 Beauty Salon Booking Bot with date + paginated timeslot picker and admin approval.
 """
 import os
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import logging
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -51,7 +51,7 @@ M_HAIRCUT, M_SHAVE = range(6)
 BOOKINGS = OrderedDict()
 NEXT_BOOKING_ID = 1
 
-load_dotenv()
+# load_dotenv() 
 TOKEN = os.environ["BOT_TOKEN"]
 ADMIN_CHAT_ID = int(os.environ["ADMIN_CHAT_ID"])
 
