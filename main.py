@@ -467,6 +467,7 @@ def main() -> None:
     # Utility
     application.add_handler(CommandHandler("getid", getid))
 
+    await application.bot.delete_webhook(drop_pending_updates=True)
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
