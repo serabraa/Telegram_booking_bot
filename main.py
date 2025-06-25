@@ -11,6 +11,7 @@ import logging
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from collections import OrderedDict
+from html import escape
 
 from telegram import (
     InlineKeyboardButton,
@@ -51,7 +52,7 @@ M_HAIRCUT, M_SHAVE = range(6)
 BOOKINGS = OrderedDict()
 NEXT_BOOKING_ID = 1
 
-# load_dotenv() 
+# load_dotenv()
 TOKEN = os.environ["BOT_TOKEN"]
 ADMIN_CHAT_ID = int(os.environ["ADMIN_CHAT_ID"])
 
@@ -274,12 +275,12 @@ async def slot_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     friendly = format_slot(slot)
     # build admin message
     admin_text = (
-        f"🆕 *New Booking Request*\n"
-        f"*Booking ID:* `{booking_id}`\n"
-        f"*Name:* {user.full_name}\n"
-        f"*Username:* @{user.username or '—'}\n"
-        f"*Service:* {service}\n"
-        f"*Timeslot:* {friendly}"
+        f"🆕 <b>New Booking Request</b>\n"
+        f"<b>Booking ID:</b> <code>{booking_id}</code>\n"
+        f"<b>Name:</b> {escape(user.full_name)}\n"
+        f"<b>Username:</b> @{escape(user.username) or '—'}\n"
+        f"<b>Service:</b> {service}\n"
+        f"<b>Timeslot:</b> {friendly}"
     )
     keyboard = [
         [
@@ -291,7 +292,7 @@ async def slot_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     await context.bot.send_message(
         chat_id=ADMIN_CHAT_ID,
         text=admin_text,
-        parse_mode="Markdown",
+        parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
@@ -324,11 +325,11 @@ async def admin_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
     slot_display = format_slot(booking["timeslot"])
     # Prepare the common footer of booking details
     footer = (
-        f"*Booking ID:* `{booking_id}`\n"
-        f"*Name:* {booking['user_name']}\n"
-        f"*Username:* @{booking['username']}\n"
-        f"*Service:* {booking['service']}\n"
-        f"*Timeslot:* {slot_display}"
+        f"<b>Booking ID:</b> <code>{booking_id}</code>\n"
+        f"<b>Name:</b> {escape(booking['user_name'])}\n"
+        f"<b>Username:</b> @{escape(booking['username'])}\n"
+        f"<b>Service:</b> {booking['service']}\n"
+        f"<b>Timeslot:</b> {slot_display}"
     )
 
     if action == "accept":
@@ -336,9 +337,9 @@ async def admin_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=booking["user_chat_id"],
             text=(
-                f"✅ Ваш запрос *принят*!\n\n{footer}"
+                f"✅ Ваш запрос <b>принят</b>!\n\n{footer}"
             ),
-            parse_mode="Markdown",
+            parse_mode="HTML",
         )
         await context.bot.send_message(
             chat_id=booking["user_chat_id"],
@@ -351,8 +352,8 @@ async def admin_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
         BOOKINGS.pop(booking_id, None)
         # 3) Update admin’s message
         await query.edit_message_text(
-            text=f"✅ *Запрос Принят!*\n\n{footer}",
-            parse_mode="Markdown",
+            text=f"✅ <b>Запрос Принят!</b>\n\n{footer}",
+            parse_mode="HTML",
         )
         return ConversationHandler.END
 
@@ -360,10 +361,10 @@ async def admin_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['pending_reject'] = booking_id
     await query.edit_message_text(
         text=(
-            f"❌ *Booking pending rejection*\n\n{footer}\n\n"
-            "Пожалуйста напишите *причину отклонения* (или отправьте `/skip` для отклонения без комментариев):"
+            f"❌ <b>Booking pending rejection</b>\n\n{footer}\n\n"
+            "Пожалуйста напишите <b>причину отклонения</b> (или отправьте <code>/skip</code> для отклонения без комментариев):"
         ),
-        parse_mode="Markdown"
+        parse_mode="HTML"
     )
     return AWAIT_REJECT_REASON
 
@@ -380,29 +381,29 @@ async def handle_reject_reason(update: Update, context: ContextTypes.DEFAULT_TYP
 
     # Build footer again
     footer = (
-        f"*Booking ID:* `{booking_id}`\n"
-        f"*Name:* {booking['user_name']}\n"
-        f"*Username:* @{booking['username']}\n"
-        f"*Service:* {booking['service']}\n"
-        f"*Timeslot:* {booking['timeslot']}"
+        f"<b>Booking ID:</b> <code>{booking_id}</code>\n"
+        f"<b>Name:</b> {escape(booking['user_name'])}\n"
+        f"<b>Username:</b> @{escape(booking['username'])}\n"
+        f"<b>Service:</b> {booking['service']}\n"
+        f"<b>Timeslot:</b> {booking['timeslot']}"
     )
 
     # Determine reason text
-    reason = "" if text.strip() == "/skip" else f"\n\n_Причина:_ {text}"
+    reason = "" if text.strip() == "/skip" else f"\n\n<i>Причина:</i> {text}"
 
     # 1) Notify the user
     await context.bot.send_message(
         chat_id=booking["user_chat_id"],
         text=(
-            f"❌ Ваш запрос был *отклонён*. {reason}\n\n{footer}"
+            f"❌ Ваш запрос был <b>отклонён</b>. {reason}\n\n{footer}"
         ),
-        parse_mode="Markdown",
+        parse_mode="HTML",
     )
 
     # 2) Send confirmation back to the admin (as a new message)
     await update.message.reply_text(
-        text=f"❌ *Запрос Отклонён.*{reason}\n\n{footer}",
-        parse_mode="Markdown",
+        text=f"❌ <b>Запрос Отклонён.</b>{reason}\n\n{footer}",
+        parse_mode="HTML",
     )
     await context.bot.send_message(
         chat_id=booking["user_chat_id"],
