@@ -315,7 +315,9 @@ async def admin_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
     booking = BOOKINGS.get(booking_id)
 
     if not booking:
-        return await query.edit_message_text("⚠️ Запрос не найден или закрыт.")
+        await query.edit_message_text("⚠️ Запрос не найден или закрыт.")
+        return  ConversationHandler.END
+
 
     slot_display = format_slot(booking["timeslot"])
     # Prepare the common footer of booking details
@@ -346,10 +348,11 @@ async def admin_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # 2) Remove booking
         BOOKINGS.pop(booking_id, None)
         # 3) Update admin’s message
-        return await query.edit_message_text(
+        await query.edit_message_text(
             text=f"✅ *Запрос Принят!*\n\n{footer}",
             parse_mode="Markdown",
         )
+        return ConversationHandler.END
 
     # else: action == "reject" → ask for a reason
     context.user_data['pending_reject'] = booking_id
@@ -434,7 +437,8 @@ def main() -> None:
                 CallbackQueryHandler(slot_chosen,    pattern=r"^slot_"),
             ],
         },
-        fallbacks=[CommandHandler("start", start)],
+        fallbacks=[CommandHandler("start", start),
+                   CallbackQueryHandler(restart_booking,pattern="^restart$")],
     )
     application.add_handler(conv_handler)
 
