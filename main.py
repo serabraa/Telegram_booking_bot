@@ -195,7 +195,7 @@ async def show_slot_page(query, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     # generate all slots for that date at .0 and .5
     slots = []
-    for hour in range(9, 24):
+    for hour in range(9, 20):
         slots.append(f"{hour:02d}:00")
         slots.append(f"{hour:02d}:30")
     if d == now.date():
@@ -273,12 +273,14 @@ async def slot_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     }
 
     friendly = format_slot(slot)
+    raw_username = user.username or '-'
+    safe_username = escape(raw_username)
     # build admin message
     admin_text = (
         f"🆕 <b>New Booking Request</b>\n"
         f"<b>Booking ID:</b> <code>{booking_id}</code>\n"
         f"<b>Name:</b> {escape(user.full_name)}\n"
-        f"<b>Username:</b> @{escape(user.username) or '—'}\n"
+        f"<b>Username:</b> @{safe_username or '—'}\n"
         f"<b>Service:</b> {service}\n"
         f"<b>Timeslot:</b> {friendly}"
     )
@@ -324,10 +326,13 @@ async def admin_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     slot_display = format_slot(booking["timeslot"])
     # Prepare the common footer of booking details
+    raw_username = booking.get("username") or "—"  # never None
+    safe_username = escape(raw_username)  # now safe_username is a string
+
     footer = (
         f"<b>Booking ID:</b> <code>{booking_id}</code>\n"
         f"<b>Name:</b> {escape(booking['user_name'])}\n"
-        f"<b>Username:</b> @{escape(booking['username'])}\n"
+        f"<b>Username:</b> @{safe_username}\n"
         f"<b>Service:</b> {booking['service']}\n"
         f"<b>Timeslot:</b> {slot_display}"
     )
@@ -379,11 +384,13 @@ async def handle_reject_reason(update: Update, context: ContextTypes.DEFAULT_TYP
         await update.message.reply_text("⚠️ Этот запрос больше не доступен.")
         return ConversationHandler.END
 
+    raw_username = booking.get("username") or "—"  # never None
+    safe_username = escape(raw_username)  # now safe_username is a string
     # Build footer again
     footer = (
         f"<b>Booking ID:</b> <code>{booking_id}</code>\n"
         f"<b>Name:</b> {escape(booking['user_name'])}\n"
-        f"<b>Username:</b> @{escape(booking['username'])}\n"
+        f"<b>Username:</b> @{safe_username}\n"
         f"<b>Service:</b> {booking['service']}\n"
         f"<b>Timeslot:</b> {booking['timeslot']}"
     )
