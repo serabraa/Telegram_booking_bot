@@ -57,8 +57,8 @@ TOKEN = os.environ["BOT_TOKEN"]
 ADMIN_CHAT_ID = int(os.environ["ADMIN_CHAT_ID"])
 
 SERVICE_MAP = {
-    W_HAIRCUT: "Женская Стрижка",
-    W_COLORING: "Женское Окрашивание",
+    W_HAIRCUT: "Женские Волосы",
+    W_COLORING: "Женский Макияж",
     M_HAIRCUT: "Мужская Стрижка",
     M_SHAVE:   "Мужские Барберские Услуги и Борода",
 }
